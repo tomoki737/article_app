@@ -1,0 +1,39 @@
+version: "3"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/app/Dockerfile
+    container_name: app
+    tty: true
+    volumes:
+      - ./cmd:/go/src/app
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    networks:
+      - golang_test_network
+    depends_on:
+      - db
+
+  db:
+    build:
+      context: .
+      dockerfile: ./docker/db/Dockerfile
+    container_name: db
+    env_file:
+      - .env
+    ports:
+      - "3306:3306"
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - golang_test_network
+
+volumes:
+  db:
+
+networks:
+  golang_test_network:
+    external: true
