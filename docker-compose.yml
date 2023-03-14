@@ -1,26 +1,43 @@
 version: "3"
 services:
-  app:
+  back:
     build:
       context: .
-      dockerfile: ./docker/app/Dockerfile
-    container_name: app
+      dockerfile: ./docker/back/Dockerfile
+    container_name: back
     tty: true
     volumes:
-      - ./cmd:/go/src/app
+      - ./:/src/back
     env_file:
       - .env
     ports:
       - "8080:8080"
-    networks:
-      - golang_test_network
     depends_on:
       - db
+    networks:
+      - go_network
+
+  front:
+    build:
+      context: .
+      dockerfile: ./docker/front/Dockerfile
+    container_name: front
+    tty: true
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./front:/src/front
+    depends_on:
+      - db
+    networks:
+      - go_network
 
   db:
     build:
       context: .
-      dockerfile: ./docker/db/Dockerfile
+      dockerfile: ./docker/mysql/Dockerfile
     container_name: db
     env_file:
       - .env
@@ -28,12 +45,13 @@ services:
       - "3306:3306"
     volumes:
       - db:/var/lib/mysql
+      - ./database/sql:/docker-entrypoint-initdb.d
     networks:
-      - golang_test_network
+      - go_network
 
 volumes:
   db:
 
 networks:
-  golang_test_network:
+  go_network:
     external: true
