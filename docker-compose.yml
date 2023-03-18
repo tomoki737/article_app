@@ -28,7 +28,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./front:/src/front
+      - ./frontend:/src/front
     depends_on:
       - db
     networks:
