@@ -1,7 +1,7 @@
-FROM node:18.15.0
+FROM node:18.15.0-bullseye-slim
 
 WORKDIR /src/front
 
-COPY ./frontend/package*.json ./
+COPY ../../frontend/package*.json ./
 
 RUN npm install
