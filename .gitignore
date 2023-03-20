@@ -23,4 +23,5 @@
 
 ./frontend/cypress/videos/
 ./frontend/cypress/screenshots/
+
 ./tmp
