@@ -2,7 +2,7 @@ package controller
 
 import "net/http"
 
-func MakeHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func makeHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Headers", "*")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
