@@ -1,12 +1,13 @@
 package controller
 
 import (
-	"bytes"
 	"database/sql"
 	"encoding/json"
-	"fmt"
-	"log"
+	"io"
 	"net/http"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	"app/database"
 )
@@ -14,55 +15,131 @@ import (
 var db *sql.DB
 
 type Article struct {
+	Id    string `json:"id"`
 	Title string `json:"title"`
 	Body  string `json:"body"`
 }
 
-func index(w http.ResponseWriter, r *http.Request) {
+func createArticle(title string, body string) error {
 	db = database.GetDB()
+	stmt, err := db.Prepare("INSERT INTO articles(title, body) VALUES (?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 
-	var buf bytes.Buffer
+	_, err = stmt.Exec(title, body)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getAllArticles() ([]Article, error) {
+	db = database.GetDB()
 	var articles []Article
 
-	enc := json.NewEncoder(&buf)
-	rows, err := db.Query("SELECT title, body FROM articles")
+	rows, err := db.Query("SELECT id, title, body FROM articles")
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
 		article := &Article{}
-		if err := rows.Scan(&article.Title, &article.Body); err != nil {
-			log.Fatal(err)
+		err := rows.Scan(&article.Id, &article.Title, &article.Body)
+		if err != nil {
+			return nil, err
 		}
+
 		articles = append(articles, Article{
+			Id:    article.Id,
 			Title: article.Title,
 			Body:  article.Body,
 		})
 	}
-
-	enc.Encode(&articles)
-	fmt.Fprintf(w, buf.String())
+	return articles, nil
 }
 
-func store(w http.ResponseWriter, r *http.Request) {
+func getSingleArticle(id string) (*Article, error) {
 	db = database.GetDB()
+	row := db.QueryRow("SELECT id, title, body FROM articles where id = ?", id)
 
-	title := r.FormValue("title")
-	body := r.FormValue("body")
+	article := &Article{}
+	err := row.Scan(&article.Id, &article.Title, &article.Body)
 
-	stmt, err := db.Prepare("INSERT INTO articles(title, body) VALUES (?, ?)")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil, err
 	}
-	defer stmt.Close()
+	return article, nil
+}
 
-	_, err = stmt.Exec(title, body)
+func GetAllArticlesHandler(w http.ResponseWriter, r *http.Request) {
+	articles, err := getAllArticles()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	fmt.Fprintf(w,"成功です")
+	data, err := json.Marshal(articles)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+func GetSingleArticleHandler(w http.ResponseWriter, r *http.Request) {
+	sub := strings.TrimPrefix(r.URL.Path, "/articles")
+	_, id := filepath.Split(sub)
+	article, err := getSingleArticle(id)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(article)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+func SaveArticleHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	length, err := strconv.Atoi(r.Header.Get("Content-Length"))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	body := make([]byte, length)
+	length, err = r.Body.Read(body)
+
+	if err != nil && err != io.EOF {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	var jsonBody map[string]interface{}
+	err = json.Unmarshal(body[:length], &jsonBody)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	article_title := jsonBody["title"].(string)
+	article_body := jsonBody["body"].(string)
+	err = createArticle(article_title, article_body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

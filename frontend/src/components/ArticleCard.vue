@@ -1,7 +1,13 @@
 <template>
   <div>
-    <v-card width="500" class="mx-auto mb-2" variant="outlined" >
+    <v-card width="500" class="mx-auto mb-2" variant="outlined">
       <v-card-item>
+        <router-link
+          :to="{
+            name: 'articles.edit',
+            params: { id: article.id },
+          }"
+        >編集</router-link>
         <v-card-title>{{ article.title }}</v-card-title>
       </v-card-item>
 

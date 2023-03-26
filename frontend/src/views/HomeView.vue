@@ -3,7 +3,6 @@
   <div>
     <v-container>
       <h1 class="mb-5">記事一覧</h1>
-      <v-btn icon="mdi-home" />
       <div v-for="(article, index) in articles" :key="index">
         <article-card :article="article"></article-card>
       </div>

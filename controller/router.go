@@ -3,19 +3,34 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
+	"strings"
+
+	"app/middleware"
 )
 
-func SetRouter() {
-	http.HandleFunc("/articles", makeHandler(articleHandler))
+func RegisterRoutes() {
+	http.HandleFunc("/articles", middleware.MakeHandler(ArticleHandler))
+	http.HandleFunc("/articles/", middleware.MakeHandler(HandleGetArticle))
 }
 
-func articleHandler(w http.ResponseWriter, r *http.Request) {
+func ArticleHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		index(w, r)
+		GetAllArticlesHandler(w, r)
 	case "POST":
-		store(w, r)
+		SaveArticleHandler(w, r)
 	default:
 		fmt.Fprint(w, "Method not allowed.\n")
 	}
+}
+
+func HandleGetArticle(w http.ResponseWriter, r *http.Request) {
+	sub := strings.TrimPrefix(r.URL.Path, "/articles")
+	_, id := filepath.Split(sub)
+	if id != "" {
+		GetSingleArticleHandler(w, r)
+		return
+	}
+	GetAllArticlesHandler(w, r)
 }
