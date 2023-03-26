@@ -25,14 +25,15 @@
 </template>
 
 <script>
+import axios from 'axios';
 export default {
   props: {
     article: {},
   },
   methods: {
-    // async deleteArticle() {
-    //   await axios.
-    // }
+    async deleteArticle() {
+      const res = await axios.delete("http://localhost:8080/articles/" + this.article.id)
+    }
   }
 };
 </script>
