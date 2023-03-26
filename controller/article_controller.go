@@ -3,6 +3,7 @@ package controller
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -29,6 +30,21 @@ func createArticle(title string, body string) error {
 	defer stmt.Close()
 
 	_, err = stmt.Exec(title, body)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func deleteArticle(id string) error {
+	db = database.GetDB()
+	stmt, err := db.Prepare("DELETE FROM articles WHERE id = ?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(id)
 	if err != nil {
 		return err
 	}
@@ -75,6 +91,36 @@ func getSingleArticle(id string) (*Article, error) {
 	return article, nil
 }
 
+func GetJsonBody(w http.ResponseWriter, r *http.Request) (map[string]interface{}, error) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		return nil, errors.New("Invalid Content-Type")
+	}
+
+	length, err := strconv.Atoi(r.Header.Get("Content-Length"))
+	if err != nil {
+		return nil, err
+	}
+
+	body := make([]byte, length)
+	length, err = r.Body.Read(body)
+
+	if err != nil && err != io.EOF {
+		return nil, err
+	}
+
+	var jsonBody map[string]interface{}
+	err = json.Unmarshal(body[:length], &jsonBody)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(jsonBody) == 0 {
+		return nil, errors.New("Empty request body")
+	}
+
+	return jsonBody, nil
+}
+
 func GetAllArticlesHandler(w http.ResponseWriter, r *http.Request) {
 	articles, err := getAllArticles()
 	if err != nil {
@@ -110,36 +156,35 @@ func GetSingleArticleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SaveArticleHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Content-Type") != "application/json" {
-		w.WriteHeader(http.StatusBadRequest)
-	}
-
-	length, err := strconv.Atoi(r.Header.Get("Content-Length"))
+	jsonBody, err := GetJsonBody(w, r)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	body := make([]byte, length)
-	length, err = r.Body.Read(body)
-
-	if err != nil && err != io.EOF {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	var jsonBody map[string]interface{}
-	err = json.Unmarshal(body[:length], &jsonBody)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	article_title := jsonBody["title"].(string)
-	article_body := jsonBody["body"].(string)
+	article_title, ok1 := jsonBody["title"].(string)
+	article_body, ok2 := jsonBody["body"].(string)
+
+	if !ok1 || !ok2 {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
 	err = createArticle(article_title, article_body)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
+}
+
+func DeleteArticleHandler(w http.ResponseWriter, r *http.Request) {
+	sub := strings.TrimPrefix(r.URL.Path, "/articles")
+	_, id := filepath.Split(sub)
+	err := deleteArticle(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 	w.WriteHeader(http.StatusOK)
 }
