@@ -7,6 +7,3 @@ CREATE TABLE IF NOT EXISTS articles (
   created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
   updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp ON UPDATE current_timestamp
 );
-
-INSERT INTO articles (title, body) VALUES ("test", "test_body");
-INSERT INTO articles (title, body) VALUES ("test_test", "test_test");
