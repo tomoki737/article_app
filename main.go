@@ -9,6 +9,6 @@ import (
 
 
 func main() {
-	controller.SetRouter()
+	controller.RegisterRoutes()
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
