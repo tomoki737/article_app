@@ -36,6 +36,21 @@ func createArticle(title string, body string) error {
 	return nil
 }
 
+func editArticle(title string, body string, id string) error {
+	db = database.GetDB()
+	stmt, err := db.Prepare("UPDATE articles SET title = ?, body = ? WHERE id = ?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(title, body, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func deleteArticle(id string) error {
 	db = database.GetDB()
 	stmt, err := db.Prepare("DELETE FROM articles WHERE id = ?")
@@ -171,6 +186,32 @@ func SaveArticleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = createArticle(article_title, article_body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func EditArticleHandler(w http.ResponseWriter, r *http.Request) {
+	sub := strings.TrimPrefix(r.URL.Path, "/articles")
+	_, id := filepath.Split(sub)
+	jsonBody, err := GetJsonBody(w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	article_title, ok1 := jsonBody["title"].(string)
+	article_body, ok2 := jsonBody["body"].(string)
+
+	if !ok1 || !ok2 {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err = editArticle(article_title, article_body, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

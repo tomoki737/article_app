@@ -11,7 +11,7 @@ import (
 
 func RegisterRoutes() {
 	http.HandleFunc("/articles", middleware.MakeHandler(ArticleHandler))
-	http.HandleFunc("/articles/", middleware.MakeHandler(HandleGetArticle))
+	http.HandleFunc("/articles/", middleware.MakeHandler(ArticleHasIdHandler))
 }
 
 func ArticleHandler(w http.ResponseWriter, r *http.Request) {
@@ -25,18 +25,20 @@ func ArticleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HandleGetArticle(w http.ResponseWriter, r *http.Request) {
+func ArticleHasIdHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		GetArticleHandler(w, r)
 	case "DELETE":
 		DeleteArticleHandler(w, r)
+	case "PUT":
+		EditArticleHandler(w, r)
 	default:
 		fmt.Fprint(w, "Method not allowed.\n")
 	}
 }
 
-func GetArticleHandler(w http.ResponseWriter, r *http.Request)  {
+func GetArticleHandler(w http.ResponseWriter, r *http.Request) {
 	sub := strings.TrimPrefix(r.URL.Path, "/articles")
 	_, id := filepath.Split(sub)
 
