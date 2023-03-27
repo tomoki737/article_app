@@ -26,7 +26,7 @@ export default {
   },
   methods: {
     async getArticles() {
-      const res = await axios.get("http://localhost:8080/");
+      const res = await axios.get("http://localhost:8080/articles");
       this.articles = res.data;
       console.log(this.articles);
     },

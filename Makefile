@@ -25,7 +25,7 @@ sql:
 sql-run:
 	docker-compose exec db bash -c 'mysql -p$$MYSQL_PASSWORD < docker-entrypoint-initdb.d/*.sql'
 front-log:
-	docker logs front
+	docker logs --follow front
 db-log:
 	docker logs db
 back-log:
