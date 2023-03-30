@@ -7,6 +7,7 @@ import (
 	"testing"
 	"strconv"
 	"io/ioutil"
+	"encoding/json"
 
 	"app/controller"
 	"app/database"
@@ -16,6 +17,7 @@ func TestMain(m *testing.M) {
 	db := database.GetDB()
 	tx, _ := db.Begin()
 
+	db.Exec("INSERT INTO articles (title, body) VALUES (?, ?)", "test title", "test body")
 	m.Run()
 	defer tx.Rollback()
 }
@@ -75,4 +77,35 @@ func createjsonBytes() []byte {
 	json := `{"title":"test-title","body":"test-content"}`
 	jsonBytes := []byte(json)
 	return jsonBytes
+}
+
+func TestSearchArticleHandler(t *testing.T) {
+	r, _ := http.NewRequest(http.MethodGet, "/articles/search?title=test&body=test", nil)
+	w := httptest.NewRecorder()
+	handler := http.HandlerFunc(controller.SearchArticleHandler)
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+			t.Errorf("unexpected status code: got %v want %v", w.Code, http.StatusOK)
+			t.Log(w)
+	}
+	type Article struct {
+		Id    string `json:"id"`
+		Title string `json:"title"`
+		Body  string `json:"body"`
+	}
+	var articles []Article
+
+	if err := json.NewDecoder(w.Body).Decode(&articles); err != nil {
+		t.Errorf("failed to decode response body: %v", err)
+	}
+
+	if len(articles) == 0 {
+			t.Errorf("no articles found")
+	}
+
+	// expected := Article{Id: "1", Title: "test title", Body: "test body"}
+	// if articles[0] != expected {
+	// 		t.Errorf("unexpected response: got %v want %v", articles[0], expected)
+	// }
 }
