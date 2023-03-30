@@ -31,6 +31,6 @@ db-logs:
 back-logs:
 	docker logs --follow back
 back-serve:
-	docker-compose exec back sh -c 'go run cmd/main.go'
+	docker-compose exec back sh -c 'air'
 front-serve:
 	docker-compose exec front bash -c 'npm run dev'

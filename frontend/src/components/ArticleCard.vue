@@ -33,6 +33,7 @@ export default {
   methods: {
     async deleteArticle() {
       const res = await axios.delete("http://localhost:8080/articles/" + this.article.id)
+      this.$emit("parentGetArticles")
     }
   }
 };
