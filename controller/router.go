@@ -13,6 +13,7 @@ func RegisterRoutes() {
 	http.HandleFunc("/articles", middleware.MakeHandler(ArticleHandler))
 	http.HandleFunc("/articles/", middleware.MakeHandler(ArticleHasIdHandler))
 	http.HandleFunc("/articles/search", middleware.MakeHandler(SearchArticleHandler))
+	http.HandleFunc("/articles/comment", middleware.MakeHandler(ArticleGetCommentsHanler))
 }
 
 func ArticleHandler(w http.ResponseWriter, r *http.Request) {
