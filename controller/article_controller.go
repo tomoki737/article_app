@@ -136,6 +136,40 @@ func GetJsonBody(w http.ResponseWriter, r *http.Request) (map[string]interface{}
 	return jsonBody, nil
 }
 
+func SearchArticles(title, body string)([]Article, error) {
+	db = database.GetDB()
+	var articles []Article
+	query := "SELECT id, title, body FROM articles WHERE 1 = 1"
+	if title != "" {
+		query += " AND title Like '%" + title + "%'"
+	}
+	if title != "" {
+		query += " AND body Like '%" + body + "%'"
+	}
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		article := &Article{}
+		err := rows.Scan(&article.Id, &article.Title, &article.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		articles = append(articles, Article{
+			Id:    article.Id,
+			Title: article.Title,
+			Body:  article.Body,
+		})
+	}
+	return articles, nil
+}
+
 func GetAllArticlesHandler(w http.ResponseWriter, r *http.Request) {
 	articles, err := getAllArticles()
 	if err != nil {
@@ -226,4 +260,18 @@ func DeleteArticleHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func SearchArticleHandler(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	title := query.Get("title")
+	body := query.Get("body")
+	articles, err := SearchArticles(title, body)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	data, err := json.Marshal(articles)
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
