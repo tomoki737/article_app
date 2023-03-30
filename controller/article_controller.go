@@ -152,9 +152,7 @@ func GetAllArticlesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func GetSingleArticleHandler(w http.ResponseWriter, r *http.Request) {
-	sub := strings.TrimPrefix(r.URL.Path, "/articles")
-	_, id := filepath.Split(sub)
+func GetSingleArticleHandler(w http.ResponseWriter, r *http.Request, id string) {
 	article, err := getSingleArticle(id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

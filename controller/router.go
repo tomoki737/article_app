@@ -43,7 +43,7 @@ func GetArticleHandler(w http.ResponseWriter, r *http.Request) {
 	_, id := filepath.Split(sub)
 
 	if id != "" {
-		GetSingleArticleHandler(w, r)
+		GetSingleArticleHandler(w, r, id)
 		return
 	}
 	GetAllArticlesHandler(w, r)

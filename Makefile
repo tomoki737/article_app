@@ -24,11 +24,11 @@ sql:
 	docker-compose exec db bash -c 'mysql -u $$MYSQL_USER -p$$MYSQL_PASSWORD $$MYSQL_DATABASE'
 sql-run:
 	docker-compose exec db bash -c 'mysql -p$$MYSQL_PASSWORD < docker-entrypoint-initdb.d/*.sql'
-front-log:
+front-logs:
 	docker logs --follow front
-db-log:
+db-logs:
 	docker logs db
-back-log:
+back-logs:
 	docker logs --follow back
 back-serve:
 	docker-compose exec back sh -c 'go run cmd/main.go'
