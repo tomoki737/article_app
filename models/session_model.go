@@ -24,3 +24,20 @@ func cleanSessions() {
 	}
 	fmt.Println("Session cleaner finished.")
 }
+
+func SaveSession(sessionID string, userID int) error {
+	db := database.GetDB()
+
+	stmt, err := db.Prepare("INSERT INTO sessions (session_id, user_id) VALUES (?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(sessionID, userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"app/database"
 	"app/models"
 	"app/utils"
 )
@@ -36,7 +35,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	sessionID := uuid.NewString()
 	setSession(w, sessionID)
 
-	err = saveSession(sessionID, userID)
+	err = models.SaveSession(sessionID, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -60,7 +59,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := createUser(name, password)
+	userID, err := models.CreateUser(name, password)
 	id := int(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -71,7 +70,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	setSession(w, sessionID)
 
-	err = saveSession(sessionID, id)
+	err = models.SaveSession(sessionID, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -81,45 +80,10 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Successfully registered")
 }
 
-func saveSession(sessionID string, userID int) error {
-	db := database.GetDB()
-
-	stmt, err := db.Prepare("INSERT INTO sessions (session_id, user_id) VALUES (?, ?)")
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(sessionID, userID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func setSession(w http.ResponseWriter, sessionID string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:    "session",
 		Value:   sessionID,
 		Expires: time.Now().Add(5 * time.Minute),
 	})
-}
-
-func createUser(name, password string) (int64, error) {
-	password = utils.HashString(password)
-	db := database.GetDB()
-	stmt, err := db.Prepare("INSERT INTO users (name, password) VALUES (?, ?)")
-	defer stmt.Close()
-	result, err := stmt.Exec(name, password)
-	if err != nil {
-		return 0, err
-	}
-
-	userID, err := result.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return userID, err
 }
