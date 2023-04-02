@@ -3,14 +3,13 @@ package controller
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
-	"io"
+	"fmt"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"app/database"
+	"app/utils"
 )
 
 var db *sql.DB
@@ -106,37 +105,7 @@ func getSingleArticle(id string) (*Article, error) {
 	return article, nil
 }
 
-func GetJsonBody(w http.ResponseWriter, r *http.Request) (map[string]interface{}, error) {
-	if r.Header.Get("Content-Type") != "application/json" {
-		return nil, errors.New("Invalid Content-Type")
-	}
-
-	length, err := strconv.Atoi(r.Header.Get("Content-Length"))
-	if err != nil {
-		return nil, err
-	}
-
-	body := make([]byte, length)
-	length, err = r.Body.Read(body)
-
-	if err != nil && err != io.EOF {
-		return nil, err
-	}
-
-	var jsonBody map[string]interface{}
-	err = json.Unmarshal(body[:length], &jsonBody)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(jsonBody) == 0 {
-		return nil, errors.New("Empty request body")
-	}
-
-	return jsonBody, nil
-}
-
-func SearchArticles(title, body string)([]Article, error) {
+func SearchArticles(title, body string) ([]Article, error) {
 	db = database.GetDB()
 	var articles []Article
 	query := "SELECT id, title, body FROM articles WHERE 1 = 1"
@@ -168,6 +137,41 @@ func SearchArticles(title, body string)([]Article, error) {
 		})
 	}
 	return articles, nil
+}
+
+func ArticleHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		GetAllArticlesHandler(w, r)
+	case "POST":
+		SaveArticleHandler(w, r)
+	default:
+		fmt.Fprint(w, "Method not allowed.\n")
+	}
+}
+
+func ArticleHasIdHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		GetArticleHandler(w, r)
+	case "DELETE":
+		DeleteArticleHandler(w, r)
+	case "PUT":
+		EditArticleHandler(w, r)
+	default:
+		fmt.Fprint(w, "Method not allowed.\n")
+	}
+}
+
+func GetArticleHandler(w http.ResponseWriter, r *http.Request) {
+	sub := strings.TrimPrefix(r.URL.Path, "/articles")
+	_, id := filepath.Split(sub)
+
+	if id != "" {
+		GetSingleArticleHandler(w, r, id)
+		return
+	}
+	GetAllArticlesHandler(w, r)
 }
 
 func GetAllArticlesHandler(w http.ResponseWriter, r *http.Request) {
@@ -203,7 +207,7 @@ func GetSingleArticleHandler(w http.ResponseWriter, r *http.Request, id string) 
 }
 
 func SaveArticleHandler(w http.ResponseWriter, r *http.Request) {
-	jsonBody, err := GetJsonBody(w, r)
+	jsonBody, err := utils.GetJsonBody(w, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -229,7 +233,7 @@ func SaveArticleHandler(w http.ResponseWriter, r *http.Request) {
 func EditArticleHandler(w http.ResponseWriter, r *http.Request) {
 	sub := strings.TrimPrefix(r.URL.Path, "/articles")
 	_, id := filepath.Split(sub)
-	jsonBody, err := GetJsonBody(w, r)
+	jsonBody, err := utils.GetJsonBody(w, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -275,3 +279,18 @@ func SearchArticleHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
+
+// func ArticleGetCommentsHanler(w http.ResponseWriter, r *http.Request) {
+// 	if r.Method == "GET" {
+// 		jsonComments, err := json.Marshal(comments)
+// 		if err != nil {
+// 			http.Error(w, err.Error(), http.StatusInternalServerError)
+// 			return
+// 		}
+// 		w.Header().Set("Content-Type", "application/json")
+// 		w.Write(jsonComments)
+// 		return
+// 	}
+
+// 	http.Error(w, "", http.StatusBadRequest)
+// }

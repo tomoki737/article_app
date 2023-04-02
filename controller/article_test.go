@@ -2,12 +2,12 @@ package controller
 
 import (
 	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"testing"
 	"strconv"
-	"io/ioutil"
-	"encoding/json"
+	"testing"
 
 	"app/controller"
 	"app/database"
@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
 	db := database.GetDB()
 	tx, _ := db.Begin()
 
-	db.Exec("INSERT INTO articles (title, body) VALUES (?, ?)", "test title", "test body")
+	db.Exec("INSERT INTO articles (title, body) VALUES (?, ?)", "test titles", "test bodys")
 	m.Run()
 	defer tx.Rollback()
 }
@@ -86,8 +86,8 @@ func TestSearchArticleHandler(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-			t.Errorf("unexpected status code: got %v want %v", w.Code, http.StatusOK)
-			t.Log(w)
+		t.Errorf("unexpected status code: got %v want %v", w.Code, http.StatusOK)
+		t.Log(w)
 	}
 	type Article struct {
 		Id    string `json:"id"`
@@ -101,7 +101,7 @@ func TestSearchArticleHandler(t *testing.T) {
 	}
 
 	if len(articles) == 0 {
-			t.Errorf("no articles found")
+		t.Errorf("no articles found")
 	}
 
 	// expected := Article{Id: "1", Title: "test title", Body: "test body"}
