@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -86,4 +87,19 @@ func setSession(w http.ResponseWriter, sessionID string) {
 		Value:   sessionID,
 		Expires: time.Now().Add(5 * time.Minute),
 	})
+}
+
+func CheckLoginHandler(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	user, ok := user.(*models.AuthenticatedUser)
+	if !ok {
+		http.Error(w, "token not found", http.StatusInternalServerError)
+		return
+	}
+	json, err := json.Marshal(user)
+	if err != nil {
+		http.Error(w, "user not found in context", http.StatusInternalServerError)
+		return
+	}
+	w.Write(json)
 }
