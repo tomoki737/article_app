@@ -89,11 +89,17 @@ func TestSearchArticleHandler(t *testing.T) {
 		t.Errorf("unexpected status code: got %v want %v", w.Code, http.StatusOK)
 		t.Log(w)
 	}
+
 	type Article struct {
 		Id    string `json:"id"`
 		Title string `json:"title"`
 		Body  string `json:"body"`
 	}
+
+	type Articles struct {
+		ArticleList []Article
+	}
+
 	var articles []Article
 
 	if err := json.NewDecoder(w.Body).Decode(&articles); err != nil {
