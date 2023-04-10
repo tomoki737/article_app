@@ -24,4 +24,5 @@
 ./frontend/cypress/videos/
 ./frontend/cypress/screenshots/
 
-./tmp/*
+tmp/main
+tmp/build-errors.log
