@@ -17,18 +17,9 @@ var db *sql.DB
 func ArticleHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		GetAllArticlesHandler(w, r)
+		GetArticleHandler(w, r)
 	case "POST":
 		SaveArticleHandler(w, r)
-	default:
-		fmt.Fprint(w, "Method not allowed.\n")
-	}
-}
-
-func ArticleHasIdHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "GET":
-		GetArticleHandler(w, r)
 	case "DELETE":
 		DeleteArticleHandler(w, r)
 	case "PUT":
