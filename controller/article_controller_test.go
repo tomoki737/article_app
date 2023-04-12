@@ -9,6 +9,10 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
+	"app/models"
 	"app/controller"
 	"app/database"
 )
@@ -109,9 +113,4 @@ func TestSearchArticleHandler(t *testing.T) {
 	if len(articles) == 0 {
 		t.Errorf("no articles found")
 	}
-
-	// expected := Article{Id: "1", Title: "test title", Body: "test body"}
-	// if articles[0] != expected {
-	// 		t.Errorf("unexpected response: got %v want %v", articles[0], expected)
-	// }
 }

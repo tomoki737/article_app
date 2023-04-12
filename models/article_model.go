@@ -16,6 +16,13 @@ type Articles struct {
 	Body  string `json:"body"`
 }
 
+type Comment struct {
+	Id        uint64
+	ArticleId uint64
+	UserId    uint64
+	Text      string
+}
+
 func (a *Article) CreateArticle() error {
 	db := database.GetDB()
 	stmt, err := db.Prepare("INSERT INTO articles(title, body) VALUES (?, ?)")
@@ -132,4 +139,26 @@ func SearchArticles(title, body string) ([]Article, error) {
 		})
 	}
 	return articles, nil
+}
+
+func (c *Comment) CommentSave() error {
+	db := database.GetDB()
+	stmt, err := db.Prepare("INSERT INTO comments(article_id, user_id, text) VALUES (?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(c.ArticleId, c.UserId, c.Text)
+	if err != nil {
+		return err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	c.Id = uint64(id)
+
+	return nil
 }

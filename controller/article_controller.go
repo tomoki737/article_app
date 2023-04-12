@@ -157,17 +157,42 @@ func SearchArticleHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-// func ArticleGetCommentsHanler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method == "GET" {
-// 		jsonComments, err := json.Marshal(comments)
-// 		if err != nil {
-// 			http.Error(w, err.Error(), http.StatusInternalServerError)
-// 			return
-// 		}
-// 		w.Header().Set("Content-Type", "application/json")
-// 		w.Write(jsonComments)
-// 		return
-// 	}
+func CommentSaveHandler(w http.ResponseWriter, r *http.Request) {
+	jsonBody, err := utils.GetJsonBody(w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	text, ok1 := jsonBody["text"].(string)
+	articleIDFloat, ok2 := jsonBody["articleID"].(float64)
+	userIDFloat, ok3 := jsonBody["userID"].(float64)
 
-// 	http.Error(w, "", http.StatusBadRequest)
-// }
+	if !ok1 || !ok2 || !ok3 {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	articleID, err := utils.Float64ToUint64(articleIDFloat)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	userID, err := utils.Float64ToUint64(userIDFloat)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	comment := &models.Comment{
+		ArticleId: articleID,
+		UserId:    userID,
+		Text:      text,
+	}
+
+	err = comment.CommentSave()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

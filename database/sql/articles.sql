@@ -7,3 +7,14 @@ CREATE TABLE IF NOT EXISTS articles (
   created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
   updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp ON UPDATE current_timestamp
 );
+
+CREATE TABLE IF NOT EXISTS comments (
+  id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  article_id BIGINT(20) UNSIGNED NOT NULL,
+  user_id BIGINT(20) UNSIGNED NOT NULL,
+  text TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
+  updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp ON UPDATE current_timestamp,
+  FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
