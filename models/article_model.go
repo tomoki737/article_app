@@ -141,7 +141,7 @@ func SearchArticles(title, body string) ([]Article, error) {
 	return articles, nil
 }
 
-func (c *Comment) CommentSave() error {
+func (c *Comment) SaveComment() error {
 	db := database.GetDB()
 	stmt, err := db.Prepare("INSERT INTO comments(article_id, user_id, text) VALUES (?, ?, ?)")
 	if err != nil {

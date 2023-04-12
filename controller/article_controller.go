@@ -30,8 +30,7 @@ func ArticleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetArticleHandler(w http.ResponseWriter, r *http.Request) {
-	sub := strings.TrimPrefix(r.URL.Path, "/articles")
-	_, id := filepath.Split(sub)
+	id := utils.GetURLID(r, "/articles")
 
 	if id != "" {
 		GetSingleArticleHandler(w, r, id)
@@ -99,8 +98,7 @@ func SaveArticleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func EditArticleHandler(w http.ResponseWriter, r *http.Request) {
-	sub := strings.TrimPrefix(r.URL.Path, "/articles")
-	_, id := filepath.Split(sub)
+	id := utils.GetURLID(r, "/articles")
 	jsonBody, err := utils.GetJsonBody(w, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -126,8 +124,7 @@ func EditArticleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteArticleHandler(w http.ResponseWriter, r *http.Request) {
-	sub := strings.TrimPrefix(r.URL.Path, "/articles")
-	_, id := filepath.Split(sub)
+	id := utils.GetURLID(r, "/articles")
 	article := &models.Article{Id: id}
 
 	err := article.DeleteArticle()
@@ -157,7 +154,7 @@ func SearchArticleHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func CommentSaveHandler(w http.ResponseWriter, r *http.Request) {
+func SaveCommentHandler(w http.ResponseWriter, r *http.Request) {
 	jsonBody, err := utils.GetJsonBody(w, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -188,7 +185,47 @@ func CommentSaveHandler(w http.ResponseWriter, r *http.Request) {
 		Text:      text,
 	}
 
-	err = comment.CommentSave()
+	err = comment.SaveComment()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
+	jsonBody, err := utils.GetJsonBody(w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	text, ok1 := jsonBody["text"].(string)
+	articleIDFloat, ok2 := jsonBody["articleID"].(float64)
+	userIDFloat, ok3 := jsonBody["userID"].(float64)
+
+	if !ok1 || !ok2 || !ok3 {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	articleID, err := utils.Float64ToUint64(articleIDFloat)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	userID, err := utils.Float64ToUint64(userIDFloat)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	comment := &models.Comment{
+		ArticleId: articleID,
+		UserId:    userID,
+		Text:      text,
+	}
+
+	err = comment.SaveComment()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

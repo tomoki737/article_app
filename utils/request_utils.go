@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
+	"path/filepath"
 )
 
 func GetJsonBody(w http.ResponseWriter, r *http.Request) (map[string]interface{}, error) {
@@ -36,4 +38,10 @@ func GetJsonBody(w http.ResponseWriter, r *http.Request) (map[string]interface{}
 	}
 
 	return jsonBody, nil
+}
+
+func GetURLID(r *http.Request, url string) string {
+	sub := strings.TrimPrefix(r.URL.Path, url)
+	_, id := filepath.Split(sub)
+	return id
 }
