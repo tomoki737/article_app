@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"regexp"
+	"strings"
 
+	"app/middleware"
 	"app/models"
 	"app/utils"
-	"app/middleware"
 )
 
 var db *sql.DB
@@ -17,19 +17,22 @@ var db *sql.DB
 func HandleArticleRequest(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	var articleIDPattern = regexp.MustCompile(`^/articles/\d+$`)
-	var isCommentPath =strings.HasPrefix(path, "/articles/") && strings.HasSuffix(path, "/comment")
+	var isCommentPath = strings.HasPrefix(path, "/articles/") && strings.HasSuffix(path, "/comment")
+	var isLikePath = strings.HasPrefix(path, "/articles/") && strings.HasSuffix(path, "/like")
 	var isArticlePath = articleIDPattern.MatchString(path) || path == "/articles"
 
 	if isArticlePath {
 		ArticleHandler(w, r)
 	} else if isCommentPath {
 		CommentHandler(w, r)
+	} else if isLikePath {
+		ArticleLikeHandler(w,r)
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
-func ArticleHandler(w http.ResponseWriter, r *http.Request)  {
+func ArticleHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		GetArticleHandler(w, r)
@@ -193,7 +196,7 @@ func SaveCommentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err  = middleware.ValidateComment(text)
+	err = middleware.ValidateComment(text)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -259,4 +262,33 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+func ArticleLikeHandler(w http.ResponseWriter, r *http.Request) {
+	articleIdInt, err := utils.GetURLSubID(r, 1)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	articleID, err := utils.IntToUint64(articleIdInt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user, err := middleware.GetAuthenticatedUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	Like := &models.Like{UserId: user.Id, ArticleId: articleID}
+	err = Like.AddLike()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

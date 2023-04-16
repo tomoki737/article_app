@@ -10,17 +10,17 @@ type Article struct {
 	Body  string `json:"body"`
 }
 
-type Articles struct {
-	Id    string `json:"id"`
-	Title string `json:"title"`
-	Body  string `json:"body"`
-}
-
 type Comment struct {
 	Id        uint64
 	ArticleId uint64
 	UserId    uint64
 	Text      string
+}
+
+type Like struct {
+	Id        uint64
+	ArticleId uint64
+	UserId    uint64
 }
 
 func (a *Article) CreateArticle() error {
@@ -188,4 +188,20 @@ func GetComments(articleID uint64) ([]Comment, error) {
 		})
 	}
 	return comments, nil
+}
+
+func (l *Like) AddLike() error {
+	db := database.GetDB()
+	query := "INSERT INTO likes (user_id, article_id) VALUES (?, ?)"
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(l.UserId, l.ArticleId)
+	if err != nil {
+		return err
+	}
+	return nil
 }
