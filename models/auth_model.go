@@ -7,18 +7,13 @@ import (
 	"app/utils"
 )
 
-type User struct {
-	Id   string
-	Name string
-}
-
 type UserError struct {
 	Err  error
 	Code int
 }
 
 type AuthenticatedUser struct {
-	Id        int
+	Id        uint64
 	SessionID string
 	Name      string
 }

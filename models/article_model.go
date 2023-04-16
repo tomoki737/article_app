@@ -162,3 +162,30 @@ func (c *Comment) SaveComment() error {
 
 	return nil
 }
+
+func GetComments(articleID uint64) ([]Comment, error) {
+	var comments []Comment
+	db := database.GetDB()
+	query := "SELECT id, article_id, user_id, text FROM comments WHERE article_id=?"
+	rows, err := db.Query(query, articleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		comment := &Comment{}
+		err := rows.Scan(&comment.Id, &comment.ArticleId, &comment.UserId, &comment.Text)
+		if err != nil {
+			return nil, err
+		}
+
+		comments = append(comments, Comment{
+			Id:        comment.Id,
+			ArticleId: comment.ArticleId,
+			UserId:    comment.UserId,
+			Text:      comment.Text,
+		})
+	}
+	return comments, nil
+}

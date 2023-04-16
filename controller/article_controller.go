@@ -3,18 +3,33 @@ package controller
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"path/filepath"
 	"strings"
+	"regexp"
 
 	"app/models"
 	"app/utils"
+	"app/middleware"
 )
 
 var db *sql.DB
 
-func ArticleHandler(w http.ResponseWriter, r *http.Request) {
+func HandleArticleRequest(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	var articleIDPattern = regexp.MustCompile(`^/articles/\d+$`)
+	var isCommentPath =strings.HasPrefix(path, "/articles/") && strings.HasSuffix(path, "/comment")
+	var isArticlePath = articleIDPattern.MatchString(path) || path == "/articles"
+
+	if isArticlePath {
+		ArticleHandler(w, r)
+	} else if isCommentPath {
+		CommentHandler(w, r)
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func ArticleHandler(w http.ResponseWriter, r *http.Request)  {
 	switch r.Method {
 	case "GET":
 		GetArticleHandler(w, r)
@@ -25,7 +40,18 @@ func ArticleHandler(w http.ResponseWriter, r *http.Request) {
 	case "PUT":
 		EditArticleHandler(w, r)
 	default:
-		fmt.Fprint(w, "Method not allowed.\n")
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func CommentHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		GetCommentHandler(w, r)
+	case "POST":
+		SaveCommentHandler(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -160,20 +186,32 @@ func SaveCommentHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	text, ok1 := jsonBody["text"].(string)
-	articleIDFloat, ok2 := jsonBody["articleID"].(float64)
-	userIDFloat, ok3 := jsonBody["userID"].(float64)
 
-	if !ok1 || !ok2 || !ok3 {
+	text, ok := jsonBody["text"].(string)
+	if !ok {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	articleID, err := utils.Float64ToUint64(articleIDFloat)
+
+	err  = middleware.ValidateComment(text)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	userID, err := utils.Float64ToUint64(userIDFloat)
+
+	userID, err := middleware.GetAuthenticatedUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	articleIdInt, err := utils.GetURLSubID(r, 1)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	articleID, err := utils.IntToUint64(articleIdInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -181,7 +219,7 @@ func SaveCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	comment := &models.Comment{
 		ArticleId: articleID,
-		UserId:    userID,
+		UserId:    userID.Id,
 		Text:      text,
 	}
 
@@ -195,41 +233,30 @@ func SaveCommentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
-	jsonBody, err := utils.GetJsonBody(w, r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	text, ok1 := jsonBody["text"].(string)
-	articleIDFloat, ok2 := jsonBody["articleID"].(float64)
-	userIDFloat, ok3 := jsonBody["userID"].(float64)
-
-	if !ok1 || !ok2 || !ok3 {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-	articleID, err := utils.Float64ToUint64(articleIDFloat)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	userID, err := utils.Float64ToUint64(userIDFloat)
+	articleIdInt, err := utils.GetURLSubID(r, 1)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	comment := &models.Comment{
-		ArticleId: articleID,
-		UserId:    userID,
-		Text:      text,
+	articleID, err := utils.IntToUint64(articleIdInt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	err = comment.SaveComment()
+	comments, err := models.GetComments(articleID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(comments)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }

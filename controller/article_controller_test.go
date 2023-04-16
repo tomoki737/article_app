@@ -12,9 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"app/models"
 	"app/controller"
 	"app/database"
+	"app/models"
 )
 
 func TestMain(m *testing.M) {
