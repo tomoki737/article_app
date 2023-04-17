@@ -59,6 +59,17 @@ func CommentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func ArticleLikeHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		ArticleAddLikeHandler(w, r)
+	case "DELETE":
+		ArticleUnLikeHandler(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
 func GetArticleHandler(w http.ResponseWriter, r *http.Request) {
 	id := utils.GetURLID(r, "/articles")
 
@@ -264,7 +275,7 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func ArticleLikeHandler(w http.ResponseWriter, r *http.Request) {
+func ArticleAddLikeHandler(w http.ResponseWriter, r *http.Request) {
 	articleIdInt, err := utils.GetURLSubID(r, 1)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -285,6 +296,35 @@ func ArticleLikeHandler(w http.ResponseWriter, r *http.Request) {
 
 	Like := &models.Like{UserId: user.Id, ArticleId: articleID}
 	err = Like.AddLike()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func ArticleUnLikeHandler(w http.ResponseWriter, r *http.Request) {
+	articleIdInt, err := utils.GetURLSubID(r, 1)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	articleID, err := utils.IntToUint64(articleIdInt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user, err := middleware.GetAuthenticatedUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	Like := &models.Like{UserId: user.Id, ArticleId: articleID}
+	err = Like.UnLike()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

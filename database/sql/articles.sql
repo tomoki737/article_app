@@ -27,3 +27,7 @@ CREATE TABLE IF NOT EXISTS likes (
   FOREIGN KEY (user_id) REFERENCES users(id),
   FOREIGN KEY (article_id) REFERENCES articles(id)
 );
+
+-- INSERT INTO articles (title, body) VALUES ('Example Title', 'This is an example article body.');
+-- INSERT INTO articles (title, body) VALUES ('New Article', 'This is the body of the new article.');
+

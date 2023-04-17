@@ -205,3 +205,19 @@ func (l *Like) AddLike() error {
 	}
 	return nil
 }
+
+func (l *Like) UnLike() error {
+	db := database.GetDB()
+	query := "DELETE FROM likes WHERE user_id=? AND article_id=?"
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(l.UserId, l.ArticleId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
