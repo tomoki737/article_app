@@ -21,13 +21,14 @@ func HandleArticleRequest(w http.ResponseWriter, r *http.Request) {
 	var isLikePath = strings.HasPrefix(path, "/articles/") && strings.HasSuffix(path, "/like")
 	var isArticlePath = articleIDPattern.MatchString(path) || path == "/articles"
 
-	if isArticlePath {
+	switch {
+	case isArticlePath:
 		ArticleHandler(w, r)
-	} else if isCommentPath {
+	case isCommentPath:
 		CommentHandler(w, r)
-	} else if isLikePath {
-		ArticleLikeHandler(w,r)
-	} else {
+	case isLikePath:
+		ArticleLikeHandler(w, r)
+	default:
 		http.NotFound(w, r)
 	}
 }
@@ -115,8 +116,8 @@ func SaveArticleHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	article := &models.Article{Title: article_title, Body: article_body}
 
+	article := &models.Article{Title: article_title, Body: article_body}
 	err = article.CreateArticle()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -155,11 +156,11 @@ func EditArticleHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteArticleHandler(w http.ResponseWriter, r *http.Request) {
 	id := utils.GetURLID(r, "/articles")
 	article := &models.Article{Id: id}
-
 	err := article.DeleteArticle()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -168,7 +169,6 @@ func SearchArticleHandler(w http.ResponseWriter, r *http.Request) {
 	title := query.Get("title")
 	body := query.Get("body")
 	articles, err := models.SearchArticles(title, body)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
