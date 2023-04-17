@@ -295,6 +295,12 @@ func ArticleAddLikeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Like := &models.Like{UserId: user.Id, ArticleId: articleID}
+	err = Like.UnLike()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	err = Like.AddLike()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
