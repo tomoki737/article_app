@@ -7,8 +7,8 @@ import (
 )
 
 func RegisterRoutes() {
-	http.HandleFunc("/articles", ArticleHandler)
-	http.HandleFunc("/articles/", ArticleHandler)
+	http.HandleFunc("/articles", HandleArticleRequest)
+	http.HandleFunc("/articles/", middleware.RequireLogin(HandleArticleRequest))
 	http.HandleFunc("/articles/search", SearchArticleHandler)
 	http.HandleFunc("/login", LoginHandler)
 	http.HandleFunc("/register", RegisterHandler)

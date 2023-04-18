@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"app/models"
@@ -32,4 +33,13 @@ func RequireLogin(next func(http.ResponseWriter, *http.Request)) http.HandlerFun
 
 		next(w, r)
 	}
+}
+
+func GetAuthenticatedUser(r *http.Request) (*models.AuthenticatedUser, error) {
+	user := r.Context().Value("user")
+	authenticatedUser, ok := user.(*models.AuthenticatedUser)
+	if !ok {
+		return nil, errors.New("token not found")
+	}
+	return authenticatedUser, nil
 }
